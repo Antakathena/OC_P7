@@ -2,110 +2,91 @@
 import csv
 import itertools
 import timeit
+import time
+import pprint
 # imports locaux
 # constantes
 # main
 
-def recuperer_dic_actions() -> csv.DictReader :
-    """
-    lors de la création de la DictReader, on rassemble le CSVfile avec un itertools.islice,
-    ce qui fourni au constructeur de DictReader un itérateur sans la tranche-off,
-    (ici la 1ère ligne, les headers, mais on peut retirer les lignes voulues).
-    NB : ça marche aussi avec csv.reader
-
-    Si fieldnames pas précisés, Dictreader prend les champs de la première ligne du csv comme clés
-    """
-    with open ("AlgoInvest_actions.csv",'r') as data:
-        fieldnames = ['nom', 'coût', 'pourcentage de bénéfice après 2 ans']
-        dic_actions = csv.DictReader(itertools.islice(data,1,None), fieldnames= fieldnames )
-
-    return dic_actions
-
-def from_DictReader_to_list_of_dict() -> list[dict] :
-    with open ("AlgoInvest_actions.csv",'r') as data:
-        fieldnames = ['nom', 'coût', 'pourcentage de bénéfice après 2 ans']
-        dic_actions = csv.DictReader(itertools.islice(data,1,None), fieldnames= fieldnames )
-
-        list_of_actions_as_dic = []
-        for row in dic_actions :
-            dico = {} # le dictionnaire de chaque action
-            for key, value in row.items():
-                if key == 'coût':
-                    print(key, value)
-                    print(type(value))
-                    print(value.isdigit())
-                    dico[key] = int(value)
-                    print(type(value))
-                elif key == 'pourcentage de bénéfice après 2 ans':
-                    dico[key] = int(value.replace("%",""))
-                else:
-                    dico[key]= value
-            list_of_actions_as_dic.append(dico)
-
-        for row in dic_actions:
-            print(row['nom'],row['coût'],row['pourcentage de bénéfice après 2 ans'])
-
-        return list_of_actions_as_dic
-
-
 def recuperer_liste_actions() -> list :
+    """
+    récupère la data du csv. Dans l'ordre :
+    nom, coût, % de gain sur 2 ans attention : tout est en str
+    """
     with open ("AlgoInvest_actions.csv",'r') as data:
         reader = csv.reader(data)
         actions = list(reader)[1:]
     return actions
-    
 
-def rendement_sur_2_ans(list_of_actions_as_dic):
-    results = []
-    for action in list_of_actions_as_dic:
-        rendement_sur_2_ans = action['coût']*action['pourcentage de bénéfice après 2 ans']/100
-        action.update({'rendement sur 2 ans': rendement_sur_2_ans})
-        results.append(action)
-        for item in action.items():
-            print(item)
-    return results
+def create_dictionaries(list_of_actions)->list[dict]:
+        """
+        Renvoie la liste des actions, chacune sous forme d'un dictionnaire
+        dont les clés sont : nom, coût, pourcentage de bénéfice après 2 ans,
+        rendement sur 2 ans 
+        """
+        actions_as_dict= []
+        for action in list_of_actions:
+            dico = {
+                "nom":action[0],
+                "coût":int(action[1]),
+                "pourcentage de bénéfice après 2 ans":int(action[2].replace("%","")),
+                "rendement sur 2 ans": int(action[1])*int(action[2].replace("%",""))/100}
+            actions_as_dict.append(dico)
+        return actions_as_dict
 
+def brute_force(actions_as_dict:list):
+    meilleur_panier = None
+    meilleur_rendement = 0
+
+    paniers_acceptables = []
+    for i in range(2, len(actions_as_dict) + 1):
+        paniers = itertools.combinations(actions_as_dict, i)
+        for panier in paniers:
+            cout_panier = sum(action["coût"] for action in panier)
+            # memory concious vs sum([action["cout"] for action in panier]) time concious, pourquoi?
+            if cout_panier < 500:
+                paniers_acceptables.append(panier)
+
+    for panier in paniers_acceptables:
+        rendement_panier = sum(action["rendement sur 2 ans"] for action in panier)
+        if rendement_panier > meilleur_rendement:
+            meilleur_panier = panier
+            meilleur_rendement = rendement_panier
+
+    return meilleur_panier
+
+def check_perf(f):
+    timeit.timeit(f, number = 1)
 
 if __name__ == "__main__":
+    # liste de dictionnaires (un par action): Nom de l'action, coût, % sur 2 ans, rendement sur 2 ans
+    # ( pour opti ajouter rendement relatif absolu = dividende)
+    # pour chaque combinations pour paniers =< 500 faire :
+    #     récupérer le rendement total
+    #     comparer les paniers =< 500 en fonction du rendement total
+    # if rendement > meilleur_rendement, mettre à jour meilleur_rendement
 
-    liste_de_dicos_par_action = from_DictReader_to_list_of_dict()
-    print(len(liste_de_dicos_par_action))
-    results = rendement_sur_2_ans(liste_de_dicos_par_action)
+    # sert à calculer le temps pris avec le dernier print. attention : petit projet seulement (voir 
+    # https://qastack.fr/programming/1557571/how-do-i-get-time-of-a-python-programs-execution )
+    start_time = time.time()
 
+    list_of_actions = recuperer_liste_actions()
+    list_of_dicos = create_dictionaries(list_of_actions)
+    """
+    for dico in list_of_dicos:
+        print()
+        for key, value in dico.items():
+            print(f'{key} : {value},')
+    """
+
+    meilleur_panier = brute_force(list_of_dicos)
+    for action in meilleur_panier:
+        print(action["nom"])
+    print(sum(action["coût"] for action in meilleur_panier))
+    print(sum(action["rendement sur 2 ans"] for action in meilleur_panier))
+
+    print("---%s seconds ---" % (time.time() - start_time))
     
 
 
 
-"""
-actions_tup = [("Action-1",20,5/100),("Action-2",30,10/100), ("Action-3",50,15/100), ("Action-4",70,20/100), ("Action-5",60,17/100)]
-
-
-costs = []
-for action in actions :
-    cost = action[1]
-    action[1] = int(cost)
-    costs.append(int(cost))
-
-
-meilleur_panier = None
-meilleur_rendement = 0
-for i in range(2, lenght + 1):
-    paniers = itertools.combinations(costs, i) # nb itertool
-    for panier in paniers:
-        cout_panier = sum(panier)
-        if cout_panier < 500:
-            print(panier)
-"""
-
-def brute_force(actions:list):
-    #for action in actions:
-    pass
-
-
-# CSV.dictreader -> liste de dictionnaires (un par action)
-# modif des dicos : Nom de l'action, coût, % sur 2 ans, rendement sur 2 ans
-# ( pour opti ajouter rendement relatif absolu = dividende)
-# pour chaque combinations pour paniers =< 500 faire :
-#     récupérer le rendement total
-#     comparer les paniers =< 500 en fonction du rendement total
-# if rendement > meilleur_rendement, mettre à jour meilleur_rendement
