@@ -71,6 +71,7 @@ if __name__ == "__main__":
     start_time = time.time()
 
     list_of_actions = recuperer_liste_actions()
+    print(list_of_actions)
     list_of_dicos = create_dictionaries(list_of_actions)
     """
     for dico in list_of_dicos:
