@@ -3,6 +3,7 @@ import csv
 import itertools
 import time
 import pprint
+import timeit
 # imports locaux
 # constantes
 # main
@@ -20,7 +21,7 @@ def recuperer_liste_actions(nom_du_csv:str) -> list :
 def clean_data(list_of_actions):
     clean_data = []
     for action in list_of_actions:
-        if not float(action[1]) <= 0.0:
+        if not float(action[1]) <= 0.0: # prévoir d'éventuels espaces ou
             action = [action[0], float(action[1]), float(action[2].replace("%",""))]
             clean_data.append(action)
     return clean_data
@@ -29,46 +30,65 @@ def create_dictionaries(clean_data)->list[dict]:
         """
         Renvoie la liste des actions, chacune sous forme d'un dictionnaire
         dont les clés sont : nom, coût, pourcentage de bénéfice après 2 ans,
-        rendement sur 2 ans 
+        dividendes sur 2 ans 
         """
         actions_as_dict= []
         for action in clean_data:
             cost = action[1]
             pourcentage_of_gain_over_2_years = action[2]
             dividend_over_2_years = cost*pourcentage_of_gain_over_2_years/100
+            global_yield = (dividend_over_2_years/2)/cost*100
 
             dico_action = {
-                "nom":action[0],
+                "nom": action[0],
                 "coût": cost,
-                "pourcentage de bénéfice après 2 ans":pourcentage_of_gain_over_2_years,
-                "rendement sur 2 ans":dividend_over_2_years
+                "pourcentage de bénéfice après 2 ans": pourcentage_of_gain_over_2_years,
+                "dividendes sur 2 ans": dividend_over_2_years,
+                "rendement global": global_yield
             }
 
             actions_as_dict.append(dico_action)
         return actions_as_dict
 
-def brute_force(actions_as_dict:list):
-    meilleur_panier = None
-    meilleur_rendement = 0
+def glouton (liste_actions: list[dict], budget = 500):
+    """
+    prendre l'action au meilleur rendement liste[-1] sauf si liste inversée liste[0]
+    la retirer des dispos : liste.remove(action)
+    et du budget : budget = budget - action[cout]
+    et l'ajouter au meilleur panier : meilleur_panier.append(action)
+    continuer avec la prochaine action avec le meilleur rendement
+    etc jusqu'à ce que le budget soit épuisé
+    """ 
+    # on prépare la variable pour repéré me budget déjà consommé:
+    budget_restant = budget
+    # on trie la liste des actions(dicos) par ordre décroissant en fonction du rendement global:
+    liste = sorted(liste_actions, key=lambda k: k["rendement global"], reverse=True)
+    # on prépare la liste où placer les actions retenues:
+    meilleur_panier = []
 
-    paniers_acceptables = []
-    for i in range(1, len(actions_as_dict) + 1):
-        paniers = itertools.combinations(actions_as_dict, i)
-        for panier in paniers:
-            cout_panier = sum(action["coût"] for action in panier)
-            # memory concious vs sum([action["cout"] for action in panier]) time concious, pourquoi?
-            if cout_panier < 500:
-                paniers_acceptables.append(panier)
+    for action in liste:
 
-    for panier in paniers_acceptables:
-        rendement_panier = sum(action["rendement sur 2 ans"] for action in panier)
-        if rendement_panier > meilleur_rendement:
-            meilleur_panier = panier
-            meilleur_rendement = rendement_panier
+        if budget_restant - action["coût"] <= 0:
+            if liste == []:
+                return meilleur_panier
+            else :
+                liste.remove(action)
+                continue
+            # chercher si une action a un coût qui rentre encore dedans
+        else:
+            liste.remove(action)
+            budget_restant= budget_restant - action["coût"]
+            meilleur_panier.append(action)
+
+    return meilleur_panier
+
+
+def check_perf(f):
+    """dans la lambda on peut passer la fonction avec ses arguments"""
+    print(timeit.timeit(lambda: f, number = 3))
 
 if __name__ == "__main__":
 
-    start_time = time.time()
     # liste de dictionnaires (un par action):
     # Nom de l'action, coût, % sur 2 ans, rendement sur 2 ans, rendement global absolu
     # (rendement relatif absolu = dividende)
@@ -78,20 +98,24 @@ if __name__ == "__main__":
     # if rendement > meilleur_rendement, mettre à jour meilleur_rendement
 
     # opti : panda? memoïsation, backpack, prog dynamique
-
+    datatest = "AlgoInvest_actions.csv"
     dataset1 = "dataset1_Python+P7.csv"
-    dataset2 = "dataset2_Python+P7.csv"
-    list_of_actions =  recuperer_liste_actions(dataset1)
+    datatest = "dataset2_Python+P7.csv"
+
+    list_of_actions =  recuperer_liste_actions(datatest)
     clean_list = clean_data(list_of_actions)
-    print(clean_list)
+    list_of_dicos = create_dictionaries(clean_list)
+    check_perf(glouton(list_of_dicos))
+
+    start_time = time.time()
+    list_of_actions =  recuperer_liste_actions(datatest)
+    clean_list = clean_data(list_of_actions)
     list_of_dicos = create_dictionaries(clean_list)
 
-    """
-    meilleur_panier = brute_force(list_of_dicos)
+    meilleur_panier = glouton(list_of_dicos)
+
     for action in meilleur_panier:
         print(action["nom"])
     print(sum(action["coût"] for action in meilleur_panier))
-    print(sum(action["rendement sur 2 ans"] for action in meilleur_panier))
-    """
-
+    print(sum(action["dividendes sur 2 ans"] for action in meilleur_panier))
     print("---%s seconds ---" % (time.time() - start_time))

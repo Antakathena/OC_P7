@@ -1,12 +1,7 @@
-# imports généraux
 import csv
 import itertools
 import timeit
 import time
-import pprint
-# imports locaux
-# constantes
-# main
 
 def recuperer_liste_actions() -> list :
     """
@@ -52,11 +47,12 @@ def brute_force(actions_as_dict:list):
         if rendement_panier > meilleur_rendement:
             meilleur_panier = panier
             meilleur_rendement = rendement_panier
-
     return meilleur_panier
 
 def check_perf(f):
-    timeit.timeit(f, number = 1)
+    """dans la lambda on peut passer la fonction avec ses arguments"""
+    print(timeit.timeit(lambda: f, number = 1))
+    #print(timeit.repeat(lambda: brute_force(list_of_dicos), repeat=3, number=3))
 
 if __name__ == "__main__":
     # liste de dictionnaires (un par action): Nom de l'action, coût, % sur 2 ans, rendement sur 2 ans
@@ -68,17 +64,14 @@ if __name__ == "__main__":
 
     # sert à calculer le temps pris avec le dernier print. attention : petit projet seulement (voir 
     # https://qastack.fr/programming/1557571/how-do-i-get-time-of-a-python-programs-execution )
+    list_of_actions = recuperer_liste_actions()
+    list_of_dicos = create_dictionaries(list_of_actions)
+    check_perf(brute_force(list_of_dicos))
+    
     start_time = time.time()
 
     list_of_actions = recuperer_liste_actions()
-    print(list_of_actions)
     list_of_dicos = create_dictionaries(list_of_actions)
-    """
-    for dico in list_of_dicos:
-        print()
-        for key, value in dico.items():
-            print(f'{key} : {value},')
-    """
 
     meilleur_panier = brute_force(list_of_dicos)
     for action in meilleur_panier:
