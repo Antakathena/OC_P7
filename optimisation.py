@@ -1,12 +1,6 @@
-# imports généraux
 import csv
-import itertools
 import time
-import pprint
 import timeit
-# imports locaux
-# constantes
-# main
 
 def recuperer_liste_actions(nom_du_csv:str) -> list :
     """
@@ -82,7 +76,6 @@ def glouton (liste_actions: list[dict], budget = 500):
 
     return meilleur_panier
 
-
 def check_perf(f):
     """dans la lambda on peut passer la fonction avec ses arguments"""
     print(timeit.timeit(lambda: f, number = 3))
@@ -100,22 +93,28 @@ if __name__ == "__main__":
     # opti : panda? memoïsation, backpack, prog dynamique
     datatest = "AlgoInvest_actions.csv"
     dataset1 = "dataset1_Python+P7.csv"
-    datatest = "dataset2_Python+P7.csv"
-
-    list_of_actions =  recuperer_liste_actions(datatest)
-    clean_list = clean_data(list_of_actions)
-    list_of_dicos = create_dictionaries(clean_list)
-    check_perf(glouton(list_of_dicos))
+    dataset2 = "dataset2_Python+P7.csv"
+    a_analyser = dataset2
 
     start_time = time.time()
-    list_of_actions =  recuperer_liste_actions(datatest)
+    list_of_actions =  recuperer_liste_actions(a_analyser)
     clean_list = clean_data(list_of_actions)
     list_of_dicos = create_dictionaries(clean_list)
 
     meilleur_panier = glouton(list_of_dicos)
 
+    temps_programme = "%s seconds" % (time.time() - start_time)
+
+    print(f"\nRAPPORT: {a_analyser}")
+    print("----------Meilleur panier----------")
     for action in meilleur_panier:
         print(action["nom"])
+    print("\n- Coût total du panier:  ", end ='')
     print(sum(action["coût"] for action in meilleur_panier))
+    print("- dividendes sur 2 ans:  ", end ='')
     print(sum(action["dividendes sur 2 ans"] for action in meilleur_panier))
-    print("---%s seconds ---" % (time.time() - start_time))
+    print("- Temps d'execution pour la fonction \"glouton\":  ", end ='')
+    check_perf(glouton(list_of_dicos)) 
+    print("- Temps d'execution de tout le programme (avec aléas du système):  ", end ='')
+    print(temps_programme)
+    print()
