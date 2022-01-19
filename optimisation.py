@@ -2,6 +2,11 @@ import csv
 import time
 import timeit
 
+datatest = "OC_P7\AlgoInvest_actions.csv"
+dataset1 = "OC_P7\dataset1_Python+P7.csv"
+dataset2 = "OC_P7\dataset2_Python+P7.csv"
+
+
 def recuperer_liste_actions(nom_du_csv:str) -> list :
     """
     récupère la data du csv. Dans l'ordre :
@@ -15,7 +20,7 @@ def recuperer_liste_actions(nom_du_csv:str) -> list :
 def clean_data(list_of_actions):
     clean_data = []
     for action in list_of_actions:
-        if not float(action[1]) <= 0.0: # prévoir d'éventuels espaces ou
+        if not float(action[1]) <= 0.0:
             action = [action[0], float(action[1]), float(action[2].replace("%",""))]
             clean_data.append(action)
     return clean_data
@@ -46,18 +51,13 @@ def create_dictionaries(clean_data)->list[dict]:
 
 def glouton (liste_actions: list[dict], budget = 500):
     """
-    prendre l'action au meilleur rendement liste[-1] sauf si liste inversée liste[0]
-    la retirer des dispos : liste.remove(action)
-    et du budget : budget = budget - action[cout]
-    et l'ajouter au meilleur panier : meilleur_panier.append(action)
+    prendre l'action au meilleur rendement,
+    la retirer des dispos et du budget et l'ajouter au meilleur panier
     continuer avec la prochaine action avec le meilleur rendement
-    etc jusqu'à ce que le budget soit épuisé
+    qui rentre encore dans le budget
     """ 
-    # on prépare la variable pour repéré me budget déjà consommé:
     budget_restant = budget
-    # on trie la liste des actions(dicos) par ordre décroissant en fonction du rendement global:
     liste = sorted(liste_actions, key=lambda k: k["rendement global"], reverse=True)
-    # on prépare la liste où placer les actions retenues:
     meilleur_panier = []
 
     for action in liste:
@@ -68,7 +68,7 @@ def glouton (liste_actions: list[dict], budget = 500):
             else :
                 liste.remove(action)
                 continue
-            # chercher si une action a un coût qui rentre encore dedans
+
         else:
             liste.remove(action)
             budget_restant= budget_restant - action["coût"]
@@ -76,28 +76,16 @@ def glouton (liste_actions: list[dict], budget = 500):
 
     return meilleur_panier
 
-def check_perf(f):
+def check_perf(f,*args):
     """dans la lambda on peut passer la fonction avec ses arguments"""
-    print(timeit.timeit(lambda: f, number = 3))
+    print(timeit.timeit(lambda: f(*args), number=1))
 
 if __name__ == "__main__":
-
-    # liste de dictionnaires (un par action):
-    # Nom de l'action, coût, % sur 2 ans, rendement sur 2 ans, rendement global absolu
-    # (rendement relatif absolu = dividende)
-    # pour chaque combinations pour paniers =< 500 faire :
-    #     récupérer le rendement total
-    #     comparer les paniers =< 500 en fonction du rendement total
-    # if rendement > meilleur_rendement, mettre à jour meilleur_rendement
-
-    # opti : panda? memoïsation, backpack, prog dynamique
-    datatest = "AlgoInvest_actions.csv"
-    dataset1 = "dataset1_Python+P7.csv"
-    dataset2 = "dataset2_Python+P7.csv"
-    a_analyser = dataset2
-
+    a_analyser: str = dataset1
+    
     start_time = time.time()
     list_of_actions =  recuperer_liste_actions(a_analyser)
+    taille_liste = len(list_of_actions)
     clean_list = clean_data(list_of_actions)
     list_of_dicos = create_dictionaries(clean_list)
 
@@ -106,6 +94,7 @@ if __name__ == "__main__":
     temps_programme = "%s seconds" % (time.time() - start_time)
 
     print(f"\nRAPPORT: {a_analyser}")
+    print(f"liste de {taille_liste} éléments")
     print("----------Meilleur panier----------")
     for action in meilleur_panier:
         print(action["nom"])
@@ -114,7 +103,8 @@ if __name__ == "__main__":
     print("- dividendes sur 2 ans:  ", end ='')
     print(sum(action["dividendes sur 2 ans"] for action in meilleur_panier))
     print("- Temps d'execution pour la fonction \"glouton\":  ", end ='')
-    check_perf(glouton(list_of_dicos)) 
+    check_perf(glouton,list_of_dicos)
+    print(timeit.repeat(lambda: glouton(list_of_dicos), number=1))
     print("- Temps d'execution de tout le programme (avec aléas du système):  ", end ='')
     print(temps_programme)
     print()
