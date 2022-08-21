@@ -1,16 +1,18 @@
 import csv
 import time
 import timeit
+import os
+
 from typing import List
 
-datatest = "OC_P7\AlgoInvest_actions.csv"
-dataset1 = "OC_P7\dataset1_Python+P7.csv"
-dataset2 = "OC_P7\dataset2_Python+P7.csv"
+datatest = os.path.join("OC_P7", "AlgoInvest_actions.csv")
+dataset1 = os.path.join("OC_P7", "dataset1_Python+P7.csv")
+dataset2 = os.path.join("OC_P7", "dataset2_Python+P7.csv")
 
 
 def recuperer_liste_actions(nom_du_csv: str) -> list:
     """
-    récupère la data du csv. Dans l'ordre :
+    Récupère la data du csv. Dans l'ordre :
     nom, coût, % de gain sur 2 ans attention : tout est en str
     """
     with open(nom_du_csv, 'r') as data:
@@ -28,7 +30,7 @@ def clean_data(list_of_actions):
     return clean_data
 
 
-def create_dictionaries(clean_data) -> list[dict]:
+def create_dictionaries(clean_data) -> List[dict]:
     """
     Renvoie la liste des actions, chacune sous forme d'un dictionnaire
     dont les clés sont : nom, coût, pourcentage de bénéfice après 2 ans,
